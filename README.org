@@ -1,5 +1,6 @@
 #+TITLE: TTS
 
+#+BEGIN_SRC sh
 Usage of tts:
   -clip
     	send clipboard
@@ -12,6 +13,7 @@ Usage of tts:
     	send text
   -w int
     	word per session (default 150)
+#+END_SRC
 
 dependencies:
  - xsel
