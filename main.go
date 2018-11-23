@@ -13,7 +13,7 @@ import (
 
 	"strings"
 
-	"github.com/peterzky/misc/tts/say"
+	"github.com/peterzky/tts/say"
 )
 
 var clip, selec, pipe, debug bool
