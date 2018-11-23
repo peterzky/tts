@@ -1,0 +1,18 @@
+#+TITLE: TTS
+
+Usage of tts:
+  -clip
+    	send clipboard
+  -debug
+    	debug output
+  -p	use stdin as input
+  -sel
+    	send selection
+  -t string
+    	send text
+  -w int
+    	word per session (default 150)
+
+dependencies:
+ - xsel
+ - mpg123
