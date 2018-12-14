@@ -15,12 +15,19 @@ import (
 )
 
 const PROXY_ADDR = "127.0.0.1:1080"
+const PROXY = false
 
 func Download(vp VoicePart) {
-	dialer, _ := proxy.SOCKS5("tcp", PROXY_ADDR, nil, proxy.Direct)
-	httpTransport := &http.Transport{}
-	httpclient := &http.Client{Transport: httpTransport}
-	httpTransport.Dial = dialer.Dial
+	var httpclient *http.Client
+	if PROXY {
+		dialer, _ := proxy.SOCKS5("tcp", PROXY_ADDR, nil, proxy.Direct)
+		httpTransport := &http.Transport{}
+		httpTransport.Dial = dialer.Dial
+		httpclient = &http.Client{Transport: httpTransport}
+
+	} else {
+		httpclient = &http.Client{}
+	}
 	sess, err := session.NewSession(&aws.Config{
 		Region:     aws.String("ap-northeast-1"),
 		HTTPClient: httpclient,
