@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"os/exec"
 
-	"sync"
-
 	"flag"
 
 	"io/ioutil"
 	"os"
-
-	"strings"
 
 	"github.com/peterzky/tts/say"
 )
@@ -26,12 +22,39 @@ func init() {
 	flag.BoolVar(&selec, "sel", false, "send selection")
 	flag.BoolVar(&debug, "debug", false, "debug output")
 	flag.StringVar(&input, "t", "", "send text")
-	flag.IntVar(&word, "w", 150, "word per session")
+	flag.IntVar(&word, "w", 10, "word per session")
+}
+
+// download text to speech sequentially
+func downloader(ch chan say.VoicePart, voiceParts []say.VoicePart) {
+
+	for _, vp := range voiceParts {
+		say.Download(vp)
+		fmt.Println("download finished %d", vp.Index)
+		ch <- vp
+	}
+}
+
+// play audio with mpg123
+func player(ch chan say.VoicePart, counter int, debug bool) {
+
+	for i := 0; i < counter; i++ {
+		vp := <-ch
+		if debug {
+			fmt.Printf("Index: %d\nMessage: %s\nFileName: %s\n",
+				vp.Index, vp.Message, vp.FileName)
+			fmt.Println("---------------------------")
+		}
+		tmux := exec.Command("mpg123", vp.FileName)
+		tmux.Run()
+	}
 }
 
 func main() {
 	flag.Parse()
+
 	var text string
+
 	if pipe {
 		b, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -64,30 +87,11 @@ func main() {
 	}
 
 	voiceParts := say.Split(text, word)
-	if debug {
-		for _, v := range voiceParts {
-			fmt.Printf("Index: %d\nMessage: %s\nFileName: %s\n", v.Index, v.Message, v.FileName)
-			fmt.Println("---------------------------")
-		}
-	}
-	var wg sync.WaitGroup
 
-	for _, vp := range voiceParts {
-		wg.Add(1)
-		go func(vp say.VoicePart) {
-			defer wg.Done()
-			say.Download(vp)
-		}(vp)
-	}
-	wg.Wait()
+	download_finish := make(chan say.VoicePart, 30)
 
-	var files []string
-	for _, vp := range voiceParts {
-		files = append(files, vp.FileName)
-	}
-	cmd := fmt.Sprintf("mpg123 %s", strings.Join(files, " "))
+	go downloader(download_finish, voiceParts)
 
-	tmux := exec.Command("tmux", "new-window", "-n", "tts", cmd)
-	tmux.Run()
+	player(download_finish, len(voiceParts), debug)
 
 }
