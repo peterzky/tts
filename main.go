@@ -26,11 +26,13 @@ func init() {
 }
 
 // download text to speech sequentially
-func downloader(ch chan say.VoicePart, voiceParts []say.VoicePart) {
+func downloader(ch chan say.VoicePart, voiceParts []say.VoicePart, debug bool) {
 
 	for _, vp := range voiceParts {
 		say.Download(vp)
-		fmt.Println("download finished %d", vp.Index)
+		if debug {
+			fmt.Println("download finished ", vp.Index)
+		}
 		ch <- vp
 	}
 }
@@ -90,7 +92,7 @@ func main() {
 
 	download_finish := make(chan say.VoicePart, 30)
 
-	go downloader(download_finish, voiceParts)
+	go downloader(download_finish, voiceParts, debug)
 
 	player(download_finish, len(voiceParts), debug)
 
