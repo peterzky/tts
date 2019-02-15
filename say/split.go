@@ -2,6 +2,7 @@ package say
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -30,27 +31,46 @@ func getName(k int) string {
 	return fmt.Sprintf("/tmp/tts_%d.mp3", k)
 }
 
+func SplitSentence(longStr string) []string {
+	var sentenceList []string
+	var sentence string
+	remove_new_line := strings.NewReplacer("\n", " ", "\t", " ")
+	str := remove_new_line.Replace(longStr)
+
+	for _, ch := range str {
+		char := string(ch)
+		end, _ := regexp.Match("[.!?]", []byte(char))
+		middle, _ := regexp.Match(("[,.?!]"), []byte(char))
+		sentenceLen := len(sentence)
+
+		switch {
+		case end && sentenceLen > 50:
+			sentence += char
+			sentenceList = append(sentenceList, sentence)
+			sentence = ""
+		case middle && sentenceLen > 200:
+			sentence += char
+			sentenceList = append(sentenceList, sentence)
+			sentence = ""
+		default:
+			sentence += char
+		}
+
+	}
+
+	if len(sentence) != 0 {
+		sentenceList = append(sentenceList, sentence)
+	}
+	return sentenceList
+
+}
+
+// split string into sentences
 func Split(longStr string, length int) []VoicePart {
 	var list []VoicePart
-	words := strings.Split(longStr, " ")
-	var k int = 1
-	for i := 0; i < len(words); i += length {
-		if len(words) < length {
-			str := longStr
-			list = append(list, VoicePart{str, getName(k), k})
-		}
 
-		if i%length == 0 && i != 0 {
-			str := strings.Join(words[i-length:i], " ")
-			list = append(list, VoicePart{str, getName(k), k})
-			k++
-
-		}
-		if len(words)-i < length && i != 0 {
-			str := strings.Join(words[i:], " ")
-			list = append(list, VoicePart{str, getName(k), k})
-
-		}
+	for i, s := range SplitSentence(longStr) {
+		list = append(list, VoicePart{s, getName(i), i})
 	}
 
 	return list
